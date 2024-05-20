@@ -382,7 +382,7 @@ NN nn_backprop(Region *r, NN nn, Mat t)
     nn_zero(g);
 
     // i - current sample
-    // l - current layer
+    // layer - current layer
     // j - current activation
     // k - previous activation
 
@@ -406,25 +406,21 @@ NN nn_backprop(Region *r, NN nn, Mat t)
 #endif // NN_BACKPROP_TRADITIONAL
         }
 
-#ifdef NN_BACKPROP_TRADITIONAL
-        float s = 1;
-#else
-        float s = 2;
-#endif // NN_BACKPROP_TRADITIONAL
-
-        for (size_t l = nn.arch_count-1; l > 0; --l) {
-            for (size_t j = 0; j < nn.as[l].cols; ++j) {
-                float a = ROW_AT(nn.as[l], j);
-                float da = ROW_AT(g.as[l], j);
+        for (size_t layer = nn.arch_count-1; layer > 0; --layer) 
+        {
+            for (size_t j = 0; j < nn.as[layer].cols; ++j) 
+            {
+                float a = ROW_AT(nn.as[layer], j);
+                float da = ROW_AT(g.as[layer], j);
                 float qa = dactf(a, NN_ACT);
-                ROW_AT(g.bs[l-1], j) += s*da*qa;
-                for (size_t k = 0; k < nn.as[l-1].cols; ++k) {
+                ROW_AT(g.bs[layer-1], j) += s*da*qa;
+                for (size_t k = 0; k < nn.as[layer-1].cols; ++k) {
                     // j - weight matrix col
                     // k - weight matrix row
-                    float pa = ROW_AT(nn.as[l-1], k);
-                    float w = MAT_AT(nn.ws[l-1], k, j);
-                    MAT_AT(g.ws[l-1], k, j) += s*da*qa*pa;
-                    ROW_AT(g.as[l-1], k) += s*da*qa*w;
+                    float pa = ROW_AT(nn.as[layer-1], k);
+                    float w = MAT_AT(nn.ws[layer-1], k, j);
+                    MAT_AT(g.ws[layer-1], k, j) += s*da*qa*pa;
+                    ROW_AT(g.as[layer-1], k) += s*da*qa*w;
                 }
             }
         }
@@ -558,12 +554,12 @@ Mat row_as_mat(Row row)
     };
 }
 
-Row row_slice(Row row, size_t i, size_t cols)
+Row row_slice(Row row, size_t i, size_t size)
 {
     NN_ASSERT(i < row.cols);
-    NN_ASSERT(i + cols <= row.cols);
+    NN_ASSERT(i + size <= row.cols);
     return (Row) {
-        .cols = cols,
+        .cols = size,
         .elements = &ROW_AT(row, i),
     };
 }

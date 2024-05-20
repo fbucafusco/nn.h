@@ -409,30 +409,39 @@ NN nn_backprop(Region *r, NN nn, Mat t)
             row_fill(g.as[j], 0);
         }
 
+#ifdef NN_BACKPROP_TRADITIONAL
+        float s = 1;
+#else
+        float s = 2;
+#endif // NN_BACKPROP_TRADITIONAL
+
+        /* for each output: takes the output and calculates dJ / da at the output layer */
         for (size_t j = 0; j < out.cols; ++j) 
         {
-#ifdef NN_BACKPROP_TRADITIONAL
-            ROW_AT(NN_OUTPUT(g), j) = 2.0f/training_samples*(ROW_AT(NN_OUTPUT(nn), j) - ROW_AT(out, j));
-#else
-            ROW_AT(NN_OUTPUT(g), j) = 1.0f/training_samples*(ROW_AT(NN_OUTPUT(nn), j) - ROW_AT(out, j));
-#endif // NN_BACKPROP_TRADITIONAL
+            ROW_AT(NN_OUTPUT(g), j) = (ROW_AT(NN_OUTPUT(nn), j) - ROW_AT(out, j)) / training_samples ;
         }
 
         for (size_t layer = nn.arch_count-1; layer > 0; --layer) 
         {
-            for (size_t j = 0; j < nn.as[layer].cols; ++j) 
+            // assert( nn.as[layer].cols == nn.arch[layer] );
+            for (size_t j = 0; j < nn.arch[layer]; ++j) 
             {
-                float a = ROW_AT(nn.as[layer], j);
-                float da = ROW_AT(g.as[layer], j);
-                float qa = dactf(a, NN_ACT);
-                ROW_AT(g.bs[layer-1], j) += s*da*qa;
-                for (size_t k = 0; k < nn.as[layer-1].cols; ++k) {
+                float z  = ROW_AT(nn.as[layer], j);  //activation at the j th output
+                float da = ROW_AT(g.as[layer], j);   //dJ / da at the j layer  
+                float qa = dactf(z, NN_ACT);         //da / dz 
+
+                float loss_gradient = da*qa *s;
+
+                ROW_AT(g.bs[layer-1], j) += loss_gradient;   //update bias.
+
+                for (size_t k = 0; k < nn.as[layer-1].cols; ++k) 
+                {
                     // j - weight matrix col
                     // k - weight matrix row
                     float pa = ROW_AT(nn.as[layer-1], k);
                     float w = MAT_AT(nn.ws[layer-1], k, j);
-                    MAT_AT(g.ws[layer-1], k, j) += s*da*qa*pa;
-                    ROW_AT(g.as[layer-1], k) += s*da*qa*w;
+                    MAT_AT(g.ws[layer-1], k, j) += loss_gradient * pa;
+                    ROW_AT(g.as[layer-1], k)    += loss_gradient * w;
                 }
             }
         }

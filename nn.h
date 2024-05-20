@@ -353,29 +353,34 @@ void nn_forward(NN nn)
 float nn_cost(NN nn, Mat t)
 {
     NN_ASSERT(NN_INPUT(nn).cols + NN_OUTPUT(nn).cols == t.cols);
-    size_t n = t.rows;
+    size_t training_samples = t.rows;
 
     float c = 0;
-    for (size_t i = 0; i < n; ++i) {
+    for (size_t i = 0; i < training_samples; ++i) {
         Row row = mat_row(t, i);
-        Row x = row_slice(row, 0, NN_INPUT(nn).cols);
-        Row y = row_slice(row, NN_INPUT(nn).cols, NN_OUTPUT(nn).cols);
+        Row in = row_slice(row, 0, NN_INPUT(nn).cols);
+        Row out = row_slice(row, NN_INPUT(nn).cols, NN_OUTPUT(nn).cols);
 
-        row_copy(NN_INPUT(nn), x);
+        row_copy(NN_INPUT(nn), in);
+
         nn_forward(nn);
-        size_t q = y.cols;
-        for (size_t j = 0; j < q; ++j) {
-            float d = ROW_AT(NN_OUTPUT(nn), j) - ROW_AT(y, j);
+        
+        size_t q = out.cols;
+
+        for (size_t j = 0; j < q; ++j) 
+        {
+            float d = ROW_AT( NN_OUTPUT(nn) , j ) - ROW_AT(out, j);
             c += d*d;
         }
     }
 
-    return c/n;
+    return c/training_samples;
 }
 
 NN nn_backprop(Region *r, NN nn, Mat t)
 {
-    size_t n = t.rows;
+    size_t training_samples = t.rows; 
+
     NN_ASSERT(NN_INPUT(nn).cols + NN_OUTPUT(nn).cols == t.cols);
 
     NN g = nn_alloc(r, nn.arch, nn.arch_count);
@@ -386,23 +391,30 @@ NN nn_backprop(Region *r, NN nn, Mat t)
     // j - current activation
     // k - previous activation
 
-    for (size_t i = 0; i < n; ++i) {
+    //for each training point in mat.
+    for (size_t i = 0; i < training_samples; ++i) 
+    {
+        /* whole trining row */
         Row row = mat_row(t, i);
+        /* in out splitted trining rows */
         Row in = row_slice(row, 0, NN_INPUT(nn).cols);
         Row out = row_slice(row, NN_INPUT(nn).cols, NN_OUTPUT(nn).cols);
 
         row_copy(NN_INPUT(nn), in);
+
+        /* forwarded training data */
         nn_forward(nn);
 
         for (size_t j = 0; j < nn.arch_count; ++j) {
             row_fill(g.as[j], 0);
         }
 
-        for (size_t j = 0; j < out.cols; ++j) {
+        for (size_t j = 0; j < out.cols; ++j) 
+        {
 #ifdef NN_BACKPROP_TRADITIONAL
-            ROW_AT(NN_OUTPUT(g), j) = 2.0f/n*(ROW_AT(NN_OUTPUT(nn), j) - ROW_AT(out, j));
+            ROW_AT(NN_OUTPUT(g), j) = 2.0f/training_samples*(ROW_AT(NN_OUTPUT(nn), j) - ROW_AT(out, j));
 #else
-            ROW_AT(NN_OUTPUT(g), j) = 1.0f/n*(ROW_AT(NN_OUTPUT(nn), j) - ROW_AT(out, j));
+            ROW_AT(NN_OUTPUT(g), j) = 1.0f/training_samples*(ROW_AT(NN_OUTPUT(nn), j) - ROW_AT(out, j));
 #endif // NN_BACKPROP_TRADITIONAL
         }
 

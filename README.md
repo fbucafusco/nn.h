@@ -9,7 +9,8 @@ Simple stb-style head-only library for Neural Networks. Created for educational 
 
 ```
 sudo apt-get update
-sudo apt-get install libglfw3 libglfw3-dev libxkbcommon-dev
+sudo apt-get install libglfw3 libglfw3-dev libxkbcommon-dev build-essential libgl1-mesa-dev libglu1-mesa-dev freeglut3-dev libglew-dev
+
 ```
 
 ## Quick Start

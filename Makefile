@@ -1,4 +1,4 @@
-CFLAGS= -O3 -Wall -Wextra -ggdb -I$(CURDIR)/thirdparty/ -I$(CURDIR) -I$(RAYLIB_DIR)/src
+CFLAGS= -Wall -Wextra  -I$(CURDIR)/thirdparty/ -I$(CURDIR) -I$(RAYLIB_DIR)/src
 LFLAGS= -L$(RAYLIB_DIR)/src -lraylib -ldl -lm 
 
 BUILD_DIR=$(CURDIR)/build
@@ -39,25 +39,28 @@ raylib: $(RAYLIB_DIR)/src/libraylib.a
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
 
-all: raylib  $(BUILD_DIR) img2nn shape xor adder layout opengl_matrix_mul #matrix_mul
+all: raylib  $(BUILD_DIR) img2nn shape xor adder layout opengl_matrix_mul img2nn_2#matrix_mul
 
 img2nn: $(SRC_DIR)/img2nn.c | $(BUILD_DIR)
-	gcc $(CFLAGS) -o $(BUILD_DIR)/$@ $< $(LFLAGS)  
+	gcc $(CFLAGS) -o $(BUILD_DIR)/$@ $< $(LFLAGS)   -O3 -ggdb 
+	
+img2nn_2: $(SRC_DIR)/img2nn_2.c | $(BUILD_DIR)
+	gcc $(CFLAGS) -o $(BUILD_DIR)/$@ $< $(LFLAGS)   -O3   -march=native
 
 shape: $(SRC_DIR)/shape.c | $(BUILD_DIR)
-	gcc $(CFLAGS) -o $(BUILD_DIR)/$@ $< $(LFLAGS)  
+	gcc $(CFLAGS) -o $(BUILD_DIR)/$@ $< $(LFLAGS)   -O3 -ggdb 
 
 xor: $(SRC_DIR)/xor.c | $(BUILD_DIR)
-	gcc $(CFLAGS) -o $(BUILD_DIR)/$@ $< $(LFLAGS)  
+	gcc $(CFLAGS) -o $(BUILD_DIR)/$@ $< $(LFLAGS)   -O3 -ggdb 
 
 adder: $(SRC_DIR)/adder.c | $(BUILD_DIR)
-	gcc $(CFLAGS) -o $(BUILD_DIR)/$@ $< $(LFLAGS)  
+	gcc $(CFLAGS) -o $(BUILD_DIR)/$@ $< $(LFLAGS)   -O3 -ggdb 
 
 layout: $(SRC_DIR)/layout.c | $(BUILD_DIR)
-	gcc $(CFLAGS) -o $(BUILD_DIR)/$@ $< $(LFLAGS)  
+	gcc $(CFLAGS) -o $(BUILD_DIR)/$@ $< $(LFLAGS)  -O3 -ggdb 
 
 opengl_matrix_mul: $(SRC_DIR)/opengl_matrix_mul.c | $(BUILD_DIR)
-	gcc $(CFLAGS) -o $(BUILD_DIR)/$@ $< $(LFLAGS) -lglfw -ldl -lpthread -lGL -lGLEW -lglut   -DNO_PRINT_MAT
+	gcc $(CFLAGS) -o $(BUILD_DIR)/$@ $< $(LFLAGS) -lglfw -ldl -lpthread -lGL -lGLEW -lglut -O3 -ggdb   -DNO_PRINT_MAT
  
  
 

@@ -21,7 +21,7 @@
 #define NN_IMPLEMENTATION
 #include "nn.h"
 
-size_t arch[] = {3, 70, 80, 10, 9, 1};
+size_t arch[] = {3, 28, 28,  9, 1};
 
 size_t max_epoch = 100 * 1000;
 size_t batches_per_frame = 200;
@@ -397,6 +397,100 @@ int main(int argc, char **argv)
     bool scroll_dragging = false;
     size_t epoch = 0;
 
+    int w = GetRenderWidth();
+    int h = GetRenderHeight();
+
+    /*images/preview space: will be matrix of NxN deendin on the number of the input images */
+    int n_samples_x = ceil(sqrt(img_count));
+    int n_samples_y = ceil(img_count / (float)n_samples_x);
+
+    bool original_imgs_already_rendered = false;
+
+    Gym_Rect r;
+    r.w = w;
+    r.h = h * 2 / 3;
+    r.x = 0;
+    r.y = h / 2 - r.h / 2;
+
+    /* precalc all drawing regions because they are all the same on each iteration */
+    int global_i = 0;
+    Gym_Rect gym_plot_slot;
+    Gym_Rect gym_nn_weights_heatmap_slot;
+    Gym_Rect master_peview_slot;
+
+    Gym_Rect images_slot;
+    Gym_Rect preview_slot;
+    Gym_Rect preview_slide_slot;
+    Gym_Rect images_sub_slot[img_count];
+    Gym_Rect previews_sub_slot[img_count];
+
+    gym_layout_begin(GLO_HORZ, r, 3, 10);
+    {
+        gym_plot_slot = gym_layout_slot();
+        gym_nn_weights_heatmap_slot = gym_layout_slot();
+        master_peview_slot = gym_layout_slot();
+        gym_layout_begin(GLO_VERT, master_peview_slot, 3, 0);
+        {
+            images_slot = gym_layout_slot();
+            preview_slot = gym_layout_slot();
+            preview_slide_slot = gym_layout_slot();
+
+            gym_layout_begin(GLO_VERT, images_slot, n_samples_y, 0);
+            {
+                global_i = 0;
+
+                for (int j = 0; j < n_samples_y; j++)
+                {
+                    Gym_Rect row_slot = gym_layout_slot();
+
+                    gym_layout_begin(GLO_HORZ, row_slot, n_samples_x, 0);
+                    {
+                        for (int i = 0; i < n_samples_x && global_i < img_count; i++)
+                        {
+                            images_sub_slot[global_i] = gym_layout_slot();
+                            global_i++;
+                        }
+                    }
+                    gym_layout_end();
+                }
+                /* purge the non used laouts */
+                for (int j = 0; j < img_count - global_i; j++)
+                {
+                    gym_layout_slot();
+                }
+            }
+            gym_layout_end();
+            /* TODO repetead code, can be generalized. */
+            gym_layout_begin(GLO_VERT, preview_slot, n_samples_y, 0);
+            {
+                global_i = 0;
+
+                for (int j = 0; j < n_samples_y; j++)
+                {
+                    Gym_Rect row_slot = gym_layout_slot();
+
+                    gym_layout_begin(GLO_HORZ, row_slot, n_samples_x, 0);
+                    {
+                        for (int i = 0; i < n_samples_x && global_i < img_count; i++)
+                        {
+                            previews_sub_slot[global_i] = gym_layout_slot();
+                            global_i++;
+                        }
+                    }
+                    gym_layout_end();
+                }
+                /* purge the non used laouts */
+                for (int j = 0; j < img_count - global_i; j++)
+                {
+                    gym_layout_slot();
+                }
+            }
+            gym_layout_end();
+        }
+        gym_layout_end();
+    }
+    gym_layout_end();
+
     while (!WindowShouldClose())
     {
         if (IsKeyPressed(KEY_SPACE))
@@ -450,102 +544,37 @@ int main(int argc, char **argv)
         BeginDrawing();
         ClearBackground(GYM_BACKGROUND);
         {
-            int w = GetRenderWidth();
-            int h = GetRenderHeight();
+            gym_plot(plot, gym_plot_slot, RED);
 
-            /*images/preview space: will be matrix of NxN deendin on the number of the input images */
-            int n_samples_x = ceil(sqrt(img_count));
-            int n_samples_y = ceil(img_count / (float)n_samples_x);
+            gym_render_nn_weights_heatmap(nn, gym_nn_weights_heatmap_slot);
 
-            Gym_Rect r;
-            r.w = w;
-            r.h = h * 2 / 3;
-            r.x = 0;
-            r.y = h / 2 - r.h / 2;
+            /* input images */
 
-            gym_layout_begin(GLO_HORZ, r, 3, 10);
+            // if (!original_imgs_already_rendered)
             {
-                gym_plot(plot, gym_layout_slot(), RED);
-
-                gym_render_nn_weights_heatmap(nn, gym_layout_slot());
-
-                Gym_Rect master_peview_slot = gym_layout_slot();
-                gym_layout_begin(GLO_VERT, master_peview_slot, 3, 0);
+                /* input images slots */
+                for (int i = 0; i < img_count; i++)
                 {
-                    /* input images */
-                    int global_i = 0;
-                    Gym_Rect images_slot = gym_layout_slot();
-                    Gym_Rect preview_slot = gym_layout_slot();
-                    Gym_Rect preview_slide_slot = gym_layout_slot();
- 
- /* input images slots */
-                    gym_layout_begin(GLO_VERT, images_slot, n_samples_y, 0);
-                    {
-                        for (int j = 0; j < n_samples_y   ; j++)
-                        {
-                            Gym_Rect row_slot = gym_layout_slot();
-                            // printf("row_slot: %f %f %f %f\n", row_slot.x, row_slot.y, row_slot.w, row_slot.h);
-              
-                            gym_layout_begin(GLO_HORZ, row_slot, n_samples_x, 0);
-                            {
-                                for (int i = 0; i < n_samples_x && global_i < img_count ; i++)
-                                {
-                                    render_texture_in_slot(oiginal_texture[global_i], GHA_CENTER, GVA_CENTER, gym_layout_slot());
-                                    global_i++;
-                                    
-                                }
-                            }
-                            gym_layout_end();
-                        }
-                        /* purge the non used laouts */
-                        for (int j = 0; j < img_count - global_i; j++)
-                        {
-                            gym_layout_slot();
-                        }
-                    }
-                    gym_layout_end();
-
-                     /* preview  images slots */
-                     global_i = 0;
-                    gym_layout_begin(GLO_VERT, preview_slot, n_samples_y, 0);
-                    {
-                        for (int j = 0; j < n_samples_y   ; j++)
-                        {
-                            Gym_Rect row_slot = gym_layout_slot();
-                            // printf("row_slot: %f %f %f %f\n", row_slot.x, row_slot.y, row_slot.w, row_slot.h);
-              
-                            gym_layout_begin(GLO_HORZ, row_slot, n_samples_x, 0);
-                            {
-                                for (int i = 0; i < n_samples_x && global_i < img_count ; i++)
-                                {
-                                    render_texture_in_slot(preview_texture[global_i], GHA_CENTER, GVA_CENTER, gym_layout_slot());
-                                    global_i++;
-                                    
-                                }
-                            }
-                            gym_layout_end();
-                        }
-                        /* purge the non used laouts */
-                        for (int j = 0; j < img_count - global_i; j++)
-                        {
-                            gym_layout_slot();
-                        }
-                    }
-                    gym_layout_end();
-                     
-
-                    render_texture_in_slot(preview_texture3, GHA_CENTER, GVA_CENTER, preview_slide_slot);
+                    render_texture_in_slot(oiginal_texture[i], GHA_CENTER, GVA_CENTER, images_sub_slot[i]);
                 }
-                gym_layout_end();
-                {
-                    float rw = master_peview_slot.w;
-                    float rh = master_peview_slot.h * 0.03;
-                    float rx = master_peview_slot.x;
-                    float ry = rh + master_peview_slot.y + master_peview_slot.h;
-                    gym_slider(&scroll, &scroll_dragging, rx, ry, rw, rh);
-                }
+
+                original_imgs_already_rendered = true;
             }
-            gym_layout_end();
+
+            /* preview  images slots */
+            for (int i = 0; i < img_count; i++)
+            {
+                render_texture_in_slot(preview_texture[i], GHA_CENTER, GVA_CENTER, previews_sub_slot[i]);
+            }
+
+            render_texture_in_slot(preview_texture3, GHA_CENTER, GVA_CENTER, preview_slide_slot);
+            {
+                float rw = master_peview_slot.w;
+                float rh = master_peview_slot.h * 0.03;
+                float rx = master_peview_slot.x;
+                float ry = rh + master_peview_slot.y + master_peview_slot.h;
+                gym_slider(&scroll, &scroll_dragging, rx, ry, rw, rh);
+            }
 
             char buffer[256];
             snprintf(buffer, sizeof(buffer), "Epoch: %zu/%zu, Rate: %f, Cost: %f, Temporary Memory: %zu\n", epoch, max_epoch, rate, plot.count > 0 ? plot.items[plot.count - 1] : 0, region_occupied_bytes(&temp));

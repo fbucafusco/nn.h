@@ -45,7 +45,7 @@ img2nn: $(SRC_DIR)/img2nn.c | $(BUILD_DIR)
 	gcc $(CFLAGS) -o $(BUILD_DIR)/$@ $< $(LFLAGS)   -O3 -ggdb 
 	
 img2nn_2: $(SRC_DIR)/img2nn_2.c | $(BUILD_DIR)
-	gcc $(CFLAGS) -o $(BUILD_DIR)/$@ $< $(LFLAGS)   -O3   -march=native
+	gcc $(CFLAGS) -o $(BUILD_DIR)/$@ $< $(LFLAGS)   -O3   
 
 shape: $(SRC_DIR)/shape.c | $(BUILD_DIR)
 	gcc $(CFLAGS) -o $(BUILD_DIR)/$@ $< $(LFLAGS)   -O3 -ggdb 
@@ -53,7 +53,7 @@ shape: $(SRC_DIR)/shape.c | $(BUILD_DIR)
 xor: $(SRC_DIR)/xor.c | $(BUILD_DIR)
 	gcc $(CFLAGS) -o $(BUILD_DIR)/$@ $< $(LFLAGS)   -O3 -ggdb 
 
-adder: $(SRC_DIR)/adder.c | $(BUILD_DIR)
+adder: $(SRC_DIR)/adder.c | $(BUILD_DIR) 
 	gcc $(CFLAGS) -o $(BUILD_DIR)/$@ $< $(LFLAGS)   -O3 -ggdb 
 
 layout: $(SRC_DIR)/layout.c | $(BUILD_DIR)

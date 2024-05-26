@@ -1,10 +1,10 @@
+Some extensions and added examples for orginal project's youtube series: 
+https://www.youtube.com/playlist?list=PLpM-Dvs8t0VZPZKggcql-MmjaBdZKeDMw
+
 # nn.h
 
 Simple stb-style head-only library for Neural Networks. Created for educational purposes. Not suitable for production.
-
-![thumbnail](./thumbnail.png)
-
-
+ 
 ## Dependencies
 
 ```
@@ -16,6 +16,6 @@ sudo apt-get install libglfw3 libglfw3-dev libxkbcommon-dev build-essential libg
 ## Quick Start
 
 ```console
-$ ./build.sh
-$ ./build/demos/img2nn ./mnist/training/8/10057.png ./mnist/training/6/10032.png
+$ make all
+$ ./build/img2nn ./mnist/training/8/10057.png ./mnist/training/6/10032.png
 ```
